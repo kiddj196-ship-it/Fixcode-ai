@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIXCODE AI - Code Anything</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;600;800&display=swap');
+body{font-family:'Inter',sans-serif} .mono{font-family:'JetBrains Mono',monospace}
+.scroll::-webkit-scrollbar{width:4px} .scroll::-webkit-scrollbar-thumb{background:#27272a;border-radius:10px}
+</style>
+</head>
+<body class="bg-[#0a0a0a] text-white h-screen flex flex-col md:flex-row overflow-hidden">
+<div class="hidden md:flex w-[280px] bg-[#111] border-r border-zinc-800 flex-col p-4">
+  <div class="flex items-center gap-3">
+    <div class="w-9 h-9 bg-white text-black rounded-xl flex items-center justify-center font-black">FX</div>
+    <div><h1 class="font-black text-sm">FIXCODE AI</h1><p class="text-[10px] text-zinc-500">v2.0 • PRIVATE</p></div>
+  </div>
+  <div class="mt-6 space-y-2">
+    <button onclick="newChat()" class="w-full bg-white text-black p-3 rounded-xl text-xs font-bold">+ New Chat</button>
+  </div>
+  <div class="mt-auto bg-zinc-900 border border-zinc-800 p-3 rounded-xl">
+    <p class="text-[11px] text-zinc-400">Credits</p>
+    <p class="text-sm font-bold" id="creditCount">50 / 50</p>
+    <div class="w-full h-1.5 bg-black rounded-full mt-2"><div id="creditBar" class="h-1.5 bg-white rounded-full w-full"></div></div>
+  </div>
+</div>
+<div class="flex-1 flex flex-col bg-[#0a0a0a] relative">
+  <div class="h-14 border-b border-zinc-800 flex items-center justify-between px-4">
+    <div class="flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span class="text-[11px] text-zinc-500">Groq Llama 3.1 • Secure Backend</span></div>
+  </div>
+  <div id="chatBox" class="flex-1 overflow-y-auto scroll p-4 md:p-8 space-y-6">
+    <div class="max-w-3xl mx-auto text-center mt-10">
+      <h2 class="text-3xl md:text-5xl font-black tracking-tight">Tengeneza<br><span class="text-zinc-500">Code Yoyote.</span></h2>
+      <p class="text-sm text-zinc-500 mt-3">Fixcode sasa iko salama - Key imefichwa kwa backend.</p>
+    </div>
+  </div>
+  <div id="imgPreviewWrap" class="hidden max-w-3xl mx-auto w-full px-4 md:px-8 pb-2">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-2 flex items-center justify-between">
+      <div class="flex items-center gap-2"><img id="imgPreview" class="w-12 h-12 rounded-lg object-cover"><span class="text-xs text-zinc-400">Picha tayari</span></div>
+      <button onclick="removeImg()" class="text-xs bg-black px-3 py-1 rounded-full">X</button>
+    </div>
+  </div>
+  <div class="p-4 md:p-6 border-t border-zinc-800 bg-[#0a0a0a]">
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-[#151515] border border-zinc-800 rounded-2xl flex items-end gap-2 p-2">
+        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFile(this.files[0])">
+        <button onclick="document.getElementById('fileInput').click()" class="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center">📷</button>
+        <textarea id="userInput" rows="1" placeholder="Uliza chochote..." class="flex-1 bg-transparent outline-none text-sm py-2.5 resize-none mono" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}" oninput="autoGrow(this)"></textarea>
+        <button onclick="send()" class="w-10 h-10 bg-white text-black rounded-xl font-bold">↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+let credits = 50;
+let currentImageBase64 = null;
+let cache = JSON.parse(localStorage.getItem('fx_cache_v2')||'{}');
+const ILEGAL = ["hack bank","hack mpesa","virus","malware","bomb","silaha","carding","phishing"];
+function isIlegal(t){return ILEGAL.some(w=>t.toLowerCase().includes(w));}
+function autoGrow(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function newChat(){document.getElementById('chatBox').innerHTML='';}
+function handleFile(file){if(!file)return;const r=new FileReader();r.onload=e=>{currentImageBase64=e.target.result;document.getElementById('imgPreview').src=currentImageBase64;document.getElementById('imgPreviewWrap').classList.remove('hidden');};r.readAsDataURL(file);}
+function removeImg(){currentImageBase64=null;document.getElementById('imgPreviewWrap').classList.add('hidden');}
+async function send(){
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if(!text && !currentImageBase64) return;
+  if(credits<=0){alert("Credits zimeisha!");return;}
+  if(isIlegal(text)){addMsg('ai',"🚫 Siwezi kujibu maswali ya kiharamu.");return;}
+  if(cache[text] && !currentImageBase64){addMsg('me',text);addMsg('ai',cache[text]+" \n\n⚡ (cache)");input.value='';return;}
+  addMsg('me',text,currentImageBase64);
+  input.value=''; autoGrow(input);
+  credits--; updateCredits();
+  const typingId = addMsg('ai','Fixcode inachambua... ⏳');
+  try{
+    let messages = [{role:"system",content:"You are FIXCODE AI. Expert in ALL coding languages. Answer in user's language."}];
+    let userContent = text || "Chambua picha hii";
+    if(currentImageBase64){
+      messages.push({role:"user",content:[{type:"text",text:userContent},{type:"image_url",image_url:{url:currentImageBase64}}]});
+    } else {
+      messages.push({role:"user",content:userContent});
+    }
+    const model = currentImageBase64 ? "llama-3.2-11b-vision-preview" : "llama-3.1-8b-instant";
+    const res = await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model, messages})
+    });
+    const data = await res.json();
+    const answer = data.choices?.[0]?.message?.content || "Error: "+JSON.stringify(data);
+    document.getElementById(typingId).remove();
+    addMsg('ai',answer);
+    if(!currentImageBase64) {cache[text]=answer; localStorage.setItem('fx_cache_v2',JSON.stringify(cache));}
+    removeImg();
+  } catch(e){
+    document.getElementById(typingId).remove();
+    addMsg('ai',"Error ya backend. Hakikisha umeweka GROQ_API_KEY kwenye Vercel.");
+    credits++; updateCredits();
+  }
+}
+function addMsg(who, text, img){
+  const box = document.getElementById('chatBox');
+  const id = 'm'+Date.now();
+  const div = document.createElement('div');
+  div.id=id;
+  div.className='max-w-3xl mx-auto flex gap-3 '+(who==='me'?'justify-end':'');
+  if(who==='me'){
+    div.innerHTML=`<div class="bg-white text-black px-4 py-3 rounded-2xl text-sm max-w-[80%] whitespace-pre-wrap mono">${text}${img?`<img src="${img}" class="mt-2 rounded-lg max-h-48">`:''}</div>`;
+  } else {
+    div.innerHTML=`<div class="w-8 h-8 bg-zinc-900 border rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">FX</div><div class="bg-[#111] border border-zinc-800 px-4 py-3 rounded-2xl text-sm max-w-[85%] whitespace-pre-wrap">${text}</div>`;
+  }
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
+  return id;
+}
+function updateCredits(){document.getElementById('creditCount').innerText=credits+' / 50';document.getElementById('creditBar').style.width=(credits/50*100)+'%';}
+updateCredits();
+</script>
+</body>
+</html>
